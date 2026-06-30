@@ -53,6 +53,10 @@ Add to your `.claude/settings.json`:
     "weather": {
       "command": "uv",
       "args": ["run", "--directory", "/path/to/weather-mcp", "mcp", "run", "weather.py"]
+    },
+    "collections": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/collections-mcp", "python", "server.py"]
     }
   }
 }

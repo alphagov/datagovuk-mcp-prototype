@@ -23,45 +23,17 @@ async def get_all_collections_topics() -> str:
 
 
 @mcp.tool()
-async def get_childhood_vaccinations()-> str:
-    base_dir = pathlib.Path().resolve().joinpath("content", "data", "childhood-vaccinations")
+async def get_data()-> str:
     result = []
-    for filename in os.listdir(base_dir):
-        with open(base_dir.joinpath(filename), "r") as file:
-            result.append({
-                "filename": filename,
-                "content": file.read()
-            })
-            print(base_dir, filename)
-
-    return json.dumps(result)
-
-@mcp.tool()
-async def get_childcare_providers()-> str:
-    base_dir = pathlib.Path().resolve().joinpath("content", "data", "childcare-providers")
-    result = []
-    for filename in os.listdir(base_dir):
-        with open(base_dir.joinpath(filename), "r") as file:
-            result.append({
-                "filename": filename,
-                "content": file.read()
-            })
-            print(base_dir, filename)
-
-    return json.dumps(result)
-
-
-@mcp.tool()
-async def get_education_statistics()-> str:
-    base_dir = pathlib.Path().resolve().joinpath("content", "data", "education-statistics")
-    result = []
-    for filename in os.listdir(base_dir):
-        with open(base_dir.joinpath(filename), "r") as file:
-            result.append({
-                "filename": filename,
-                "content": file.read()
-            })
-            print(base_dir, filename)
+    base_dir = pathlib.Path().resolve().joinpath("content", "data")
+    for data_type in os.listdir(base_dir):
+        for filename in os.listdir(base_dir.joinpath(data_type)):
+            with open(base_dir.joinpath(data_type).joinpath(filename), "r") as file:
+                result.append({
+                    "data_type": data_type,
+                    "filename": filename,
+                    "content": file.read()
+                })
 
     return json.dumps(result)
 

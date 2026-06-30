@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "collections-mcp": {
+      "command": "uv",
+      "args": ["run", "--directory", "collections-mcp", "python", "server.py"]
+    },
+    "weather-mcp": {
+      "command": "uv",
+      "args": ["run", "--directory", "weather-mcp", "python", "weather.py"]
+    }
+  }
+}

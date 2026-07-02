@@ -10,7 +10,7 @@ mcp = FastMCP("collections", host="0.0.0.0", port=5050)
 @mcp.tool()
 async def get_content_for_collection_topic(collection_name: str, topic_name: str) -> str:
     result = []
-    base_dir = pathlib.Path().resolve().joinpath("content")
+    base_dir = pathlib.Path().resolve().joinpath("content").joinpath("collections")
     for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:
         if collection != collection_name:
             continue
@@ -29,7 +29,7 @@ async def get_content_for_collection_topic(collection_name: str, topic_name: str
 @mcp.tool()
 async def list_collections(collection_name: str | None = None) -> str:
     result = []
-    base_dir = pathlib.Path().resolve().joinpath("content")
+    base_dir = pathlib.Path().resolve().joinpath("content").joinpath("collections")
     for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:
         if collection_name and collection != collection_name:
             continue
@@ -40,7 +40,7 @@ async def list_collections(collection_name: str | None = None) -> str:
 @mcp.tool()
 async def list_topics_in_a_collection(collection_name: str) -> str:
     result = []
-    base_dir = pathlib.Path().resolve().joinpath("content")
+    base_dir = pathlib.Path().resolve().joinpath("content").joinpath("collections")
     for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:
         if collection != collection_name:
             continue

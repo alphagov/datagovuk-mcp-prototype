@@ -86,7 +86,7 @@ async def health_check(request) -> PlainTextResponse:
 
 def main():
     # Initialize and run the server
-    mcp.run(transport="stdio")
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":

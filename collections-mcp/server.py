@@ -48,6 +48,20 @@ async def list_topics_in_a_collection(collection_name: str) -> str:
     return json.dumps(result)
 
 @mcp.tool()
+async def list_data_manual() -> str:
+    result = []
+    base_dir = pathlib.Path().resolve().joinpath("content", "data-manual")
+    for filename in os.listdir(base_dir):
+        result.append(filename)
+    return json.dumps(result)
+
+@mcp.tool()
+async def get_data_manual(filename: str) -> str:
+    base_dir = pathlib.Path().resolve().joinpath("content", "data-manual")
+    with open(base_dir.joinpath(filename), "r") as file:
+        return file.read()
+
+@mcp.tool()
 async def get_data() -> str:
     result = []
     base_dir = pathlib.Path().resolve().joinpath("content", "data")

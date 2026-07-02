@@ -1,5 +1,5 @@
 def main():
-    print("Hello from collections-mcp!")
+    print("Hello from datagovuk-mcp!")
 
 
 if __name__ == "__main__":

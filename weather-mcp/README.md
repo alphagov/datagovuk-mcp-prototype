@@ -56,7 +56,7 @@ Add to your `.claude/settings.json`:
     },
     "collections": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/collections-mcp", "python", "server.py"]
+      "args": ["run", "--directory", "/path/to/datagovuk-mcp", "python", "server.py"]
     }
   }
 }

@@ -96,7 +96,7 @@ wheels = [
 ]
 
 [[package]]
-name = "collections-mcp"
+name = "datagovuk-mcp"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -87,8 +87,8 @@ jobs:
       id: build-app-image
       uses: docker/build-push-action@v5
       with:
-        file: ./collections-mcp/Dockerfile
-        context: ./collections-mcp/
+        file: ./datagovuk-mcp/Dockerfile
+        context: ./datagovuk-mcp/
         target: python-run-stage
         build-args: GIT_SHA=${{ github.sha }}
         platforms: "linux/${{ matrix.runs_on.arch }}"

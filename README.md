@@ -10,7 +10,7 @@ A collection of MCP servers used for prototyping.
 
 ## Prototypes
 
-### collections-mcp
+### datagovuk-mcp
 
 MCP server using the collections data from the data.gov.uk website.
 
@@ -23,24 +23,24 @@ MCP server showing weather reports for the US and globally taken from the <MCP w
 1. Build the Docker image
 
 ``` bash
-cd collections-mcp
-docker build -t collections-mcp .
+cd datagovuk-mcp
+docker build -t datagovuk-mcp .
 ```
 
 2. Remove the default claude MCP
 
-Comment out the collections-mcp value in `.claude/settings.json`
+Comment out the datagovuk-mcp value in `.claude/settings.json`
 
 
-Remove collections-mcp from Claude
+Remove datagovuk-mcp from Claude
 ``` bash
-claude mcp remove collections-mcp
+claude mcp remove datagovuk-mcp
 ```
 
 3. Run claude CLI command to add it as an MCP
 
 ``` bash
-claude mcp add collections-docker-mcp -- docker run -i --rm collections-mcp
+claude mcp add collections-docker-mcp -- docker run -i --rm datagovuk-mcp
 ```
 
 4. Check that Claude is using the docker MCP
@@ -51,14 +51,14 @@ do you have access to collections-docker-mcp?
 
 5. Tidy up
 
-Uncomment the collections-mcp in  `.claude/settings.json`
+Uncomment the datagovuk-mcp in  `.claude/settings.json`
 
 Remove collections-docker-mcp from Claude
 ``` bash
 claude mcp remove collections-docker-mcp
 ```
 
-Add the collections-mcp back into Claude
+Add the datagovuk-mcp back into Claude
 
 ``` bash
 claude mcp add collections-mc

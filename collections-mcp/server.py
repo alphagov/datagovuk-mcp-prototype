@@ -4,7 +4,7 @@ import pathlib
 import json
 from starlette.responses import PlainTextResponse
 
-mcp = FastMCP("collections", host="0.0.0.0", port=5050)
+mcp = FastMCP("datagovuk-mcp", host="0.0.0.0", port=5050)
 
 
 @mcp.tool()
@@ -76,6 +76,34 @@ async def get_data() -> str:
                     "filename": filename,
                     "content": file.read()
                 })
+    return json.dumps(result)
+
+@mcp.tool()
+async def get_topic_visualisation_data(topic_name: str | None = None) -> str:
+    result = []
+    base_dir = pathlib.Path().resolve().joinpath("content").joinpath("data")
+    for folder in os.listdir(base_dir):
+        if not topic_name:
+            result.append({
+                "topic": folder
+            })
+            continue
+        if folder != f"{topic_name}":
+            continue
+        for filename in os.listdir(base_dir.joinpath(folder)):
+            with open(base_dir.joinpath(folder).joinpath(filename), "r") as file:
+                result.append({
+                    "topic": folder,
+                    "filename": filename,
+                    "content": file.read()
+                })
+    
+    if not topic_name:
+        return json.dumps({
+            "message": "No topic name provided, returning list of topics with data",
+            "topics": result
+        })
+
     return json.dumps(result)
 
 

@@ -39,7 +39,7 @@ async def get_data()-> str:
     return json.dumps(result)
 
 
-@mcp.custom_route("/health", methods=["GET"])
+@mcp.custom_route("/", methods=["GET"])
 async def health_check(request) -> PlainTextResponse:
     return PlainTextResponse("OK")
  

@@ -2,8 +2,9 @@ import os
 from mcp.server.fastmcp import FastMCP
 import pathlib
 import json
+from starlette.responses import PlainTextResponse
 
-mcp = FastMCP("collections")
+mcp = FastMCP("collections", host="0.0.0.0", port=5050)
 
 
 @mcp.tool()
@@ -38,10 +39,15 @@ async def get_data()-> str:
     return json.dumps(result)
 
 
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request) -> PlainTextResponse:
+    return PlainTextResponse("OK")
+ 
+
 def main():
     # Initialize and run the server
     mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
-    main()
+    mcp.run(transport="streamable-http")

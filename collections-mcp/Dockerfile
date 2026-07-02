@@ -23,6 +23,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+FROM python-build-stage AS python-run-stage 
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 5050
+
+CMD ["python", "server.py"]
+
 FROM python-build-stage AS python-run-dev
 
 # we need to move the virtualenv outside of the $APP_HOME directory because it will be overriden by the docker compose mount
@@ -52,6 +60,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV PATH="/${VIRTUAL_ENV}/bin:$PATH"
 ENV PYTHONPATH="${VIRTUAL_ENV}/lib/python3.14/site-packages"
 
-EXPOSE 6277
+EXPOSE 5050
 
 CMD ["bash", "-c", "uv run mcp run server.py"]

@@ -8,7 +8,7 @@ mcp = FastMCP("collections", host="0.0.0.0", port=5050)
 
 
 @mcp.tool()
-async def get_all_collections_topics() -> str:
+async def get_all_content_no_data() -> str:
     result = []
     base_dir = pathlib.Path().resolve().joinpath("content")
     for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:

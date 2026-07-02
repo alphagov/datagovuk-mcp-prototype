@@ -107,6 +107,34 @@ async def get_topic_visualisation_data(topic_name: str | None = None) -> str:
     return json.dumps(result)
 
 
+@mcp.tool()
+async def get_collection_topic_with_data(collection_name: str, topic_name: str) -> str:
+    base_dir = pathlib.Path().resolve().joinpath("content")
+    collections_dir = base_dir.joinpath("collections")
+    data_dir = base_dir.joinpath("data")
+
+    topic_file = collections_dir.joinpath(collection_name).joinpath(f"{topic_name}.md")
+    if not topic_file.exists():
+        return json.dumps({"error": f"Topic '{topic_name}' not found in collection '{collection_name}'"})
+
+    with open(topic_file, "r") as f:
+        topic_content = f.read()
+
+    data_files = []
+    if data_dir.joinpath(topic_name).exists():
+        data_folder = data_dir.joinpath(topic_name)
+        for filename in os.listdir(data_folder):
+            with open(data_folder.joinpath(filename), "r") as f:
+                data_files.append({"filename": filename, "content": f.read()})
+
+    return json.dumps({
+        "collection": collection_name,
+        "topic": topic_name,
+        "content": topic_content,
+        "data": data_files,
+    })
+
+
 @mcp.custom_route("/", methods=["GET"])
 async def health_check(request) -> PlainTextResponse:
     return PlainTextResponse("OK")

@@ -8,11 +8,15 @@ mcp = FastMCP("collections", host="0.0.0.0", port=5050)
 
 
 @mcp.tool()
-async def get_all_content_no_data() -> str:
+async def get_content_for_collection_topic(collection_name: str, topic_name: str) -> str:
     result = []
     base_dir = pathlib.Path().resolve().joinpath("content")
     for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:
+        if collection != collection_name:
+            continue
         for filename in os.listdir(base_dir.joinpath(collection)):
+            if filename != topic_name:
+                continue
             with open(base_dir.joinpath(collection).joinpath(filename), "r") as file:
                 result.append({
                     "collection": collection,
@@ -22,9 +26,29 @@ async def get_all_content_no_data() -> str:
 
     return json.dumps(result)
 
+@mcp.tool()
+async def list_collections(collection_name: str | None = None) -> str:
+    result = []
+    base_dir = pathlib.Path().resolve().joinpath("content")
+    for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:
+        if collection_name and collection != collection_name:
+            continue
+        result.append(collection)
+    return json.dumps(result)
 
 @mcp.tool()
-async def get_data()-> str:
+async def list_topics_in_a_collection(collection_name: str) -> str:
+    result = []
+    base_dir = pathlib.Path().resolve().joinpath("content")
+    for collection in [f for f in os.listdir(base_dir) if os.path.isdir(base_dir.joinpath(f)) and f != "data"]:
+        if collection != collection_name:
+            continue
+        for filename in os.listdir(base_dir.joinpath(collection)):
+            result.append(filename)
+    return json.dumps(result)
+
+@mcp.tool()
+async def get_data() -> str:
     result = []
     base_dir = pathlib.Path().resolve().joinpath("content", "data")
     for data_type in os.listdir(base_dir):
@@ -35,7 +59,6 @@ async def get_data()-> str:
                     "filename": filename,
                     "content": file.read()
                 })
-
     return json.dumps(result)
 
 
@@ -50,4 +73,4 @@ def main():
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="stdio")

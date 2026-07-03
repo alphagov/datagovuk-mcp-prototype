@@ -1,0 +1,181 @@
+name: Build and Deploy multi-arch image
+
+on:
+  pull_request:
+    branches: [ build-multiarch-docker-image ]
+  push:
+    branches:
+    - build-multiarch-docker-image
+
+permissions:
+  id-token: write # required for OIDC token exchange
+  contents: read
+
+env:
+  AWS_REGION: eu-west-2
+  ECR_REGISTRY: 525320085442.dkr.ecr.eu-west-2.amazonaws.com
+  ECR_REPOSITORY: datagovuk-mcp-prototype
+  ECS_CLUSTER: test
+  ECS_SERVICE: datagovuk-mcp-prototype
+  CONTAINER_NAME: app
+  AWS_ROLE_ARN: arn:aws:iam::525320085442:role/github-actions-deployer-test
+
+jobs:
+  configure_builds:
+    name: Configure Builds
+    runs-on: ubuntu-latest
+    outputs:
+      app_metadata: ${{ steps.set-matrix.outputs.app_metadata }}
+      runs_on: ${{ steps.set-matrix.outputs.runs_on }}
+      image_exists: ${{ steps.check-ecr.outputs.exists }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - id: set-matrix
+      run: |
+        app_metadata=$(yq -o=json ".apps.datagovuk-mcp-prototype" build-config.yaml | jq -r '. | {name: .name, version: .version} | @json')
+        runs_on=$(yq -o=json '.runs_on' build-config.yaml | jq -r '[.[] | {runner_type: .runner_type, arch: .arch}] | @json')
+        echo "app_metadata=$app_metadata" >> "$GITHUB_OUTPUT"
+        echo "runs_on=$runs_on" >> "$GITHUB_OUTPUT"
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Check if image exists in ECR
+      id: check-ecr
+      run: |
+        if aws ecr describe-images \
+             --repository-name "$ECR_REPOSITORY" \
+             --image-ids imageTag="${{ github.sha }}" \
+             --region "$AWS_REGION" \
+             > /dev/null 2>&1; then
+          echo "Image already exists in ECR. Skipping build."
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+
+  build_multiarch_digests:
+    name: Build for ${{ matrix.runs_on.arch }}
+    needs: configure_builds
+    if: needs.configure_builds.outputs.image_exists == 'false'
+    strategy:
+      matrix:
+        runs_on: ${{ fromJson(needs.configure_builds.outputs.runs_on) }}
+    runs-on: ${{ matrix.runs_on.runner_type }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Setup Docker BuildX
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and Push App Image by Digest
+      id: build-app-image
+      uses: docker/build-push-action@v5
+      with:
+        file: ./datagovuk-mcp/Dockerfile
+        context: ./datagovuk-mcp/
+        target: python-run-stage
+        build-args: GIT_SHA=${{ github.sha }}
+        platforms: "linux/${{ matrix.runs_on.arch }}"
+        outputs: |
+          type=image,name=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
+
+    - name: Export App Image Digests
+      run: |
+        mkdir -p /tmp/digests
+        digest="${{ steps.build-app-image.outputs.digest }}"
+        touch "/tmp/digests/${digest#sha256:}"
+
+    - name: Upload Digest Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: digests-${{ matrix.runs_on.arch }}
+        path: /tmp/digests/*
+        if-no-files-found: error
+        retention-days: 1
+
+  create_manifest:
+    name: Create Manifest
+    needs: [ configure_builds, build_multiarch_digests ]
+    if: needs.configure_builds.outputs.image_exists == 'false'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Setup Docker BuildX
+      uses: docker/setup-buildx-action@v3
+
+    - name: Download Image Digests
+      uses: actions/download-artifact@v4
+      with:
+        path: /tmp/digests
+        pattern: digests-*
+        merge-multiple: true
+
+    - name: Create and Push Multi-arch Manifest to ECR
+      working-directory: /tmp/digests
+      run: |
+        docker buildx imagetools create -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
+          $(printf '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}@sha256:%s ' *)
+
+  deploy_to_ecs:
+    name: Deploy to ECS
+    needs: [ configure_builds, create_manifest ]
+    runs-on: ubuntu-latest
+    if: |
+      always() && 
+      (needs.create_manifest.result == 'success' || needs.create_manifest.result == 'skipped') &&
+      needs.configure_builds.result == 'success'
+    steps:
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Download current ECS task definition
+      run: |
+        aws ecs describe-task-definition \
+          --task-definition ${{ env.ECS_SERVICE }} \
+          --query taskDefinition \
+          > task-definition.json
+
+    - name: Update image in task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+    - name: Deploy to ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+        wait-for-minutes: 5
+        max-retries: 2

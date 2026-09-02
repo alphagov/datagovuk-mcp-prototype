@@ -141,10 +141,11 @@ jobs:
     name: Deploy to ECS
     needs: [ configure_builds, create_manifest ]
     runs-on: ubuntu-latest
-    if: |
-      always() && 
-      (needs.create_manifest.result == 'success' || needs.create_manifest.result == 'skipped') &&
-      needs.configure_builds.result == 'success'
+    if: false # Disabled for now, as we don't want to deploy from this workflow yet
+    # if: |
+    #   always() && 
+    #   (needs.create_manifest.result == 'success' || needs.create_manifest.result == 'skipped') &&
+    #   needs.configure_builds.result == 'success'
     steps:
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
